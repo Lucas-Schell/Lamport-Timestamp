@@ -106,7 +106,7 @@ public class Main {
             } else {
                 // caso não tenha uma resposta do outro nodo encerra a execução
                 if (!sendEvent()) {
-                    System.out.println("Falha no envio, encerrando...");
+                    System.out.println("Falha no envio para o nodo, encerrando...");
                     break;
                 }
             }
@@ -138,6 +138,7 @@ public class Main {
             out.close();
             socket.close();
         } catch (Exception e) {
+            System.out.println("Sem resposta do nodo " + nodeId);
             return false;
         }
 
