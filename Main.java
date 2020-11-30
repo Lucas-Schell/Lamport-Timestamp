@@ -52,48 +52,32 @@ public class Main {
         }
 
         try {
-            // se conecta no multicast
-            InetAddress group = InetAddress.getByName(multiIp);
-            MulticastSocket socket = new MulticastSocket(3000);
 
             // o nodo com id 1 irá esperar até todos os outros nodos se conectarem
             // e mandarem um Hello para mandar um Start e sair do loop
             if (id == 1) {
-                socket.joinGroup(group);
+                Socket socket;
+                PrintStream out;
+                for (Node node : nodes) {
+                    socket = new Socket(node.getIp(), node.getPort());
+                    out = new PrintStream(socket.getOutputStream());
+                    out.println("s");
 
-                int connected = 0;
-                while (connected != nodes.size()) {
-                    byte[] entrada = new byte[1024];
-                    DatagramPacket pacote = new DatagramPacket(entrada, entrada.length);
-                    socket.receive(pacote);
-                    if ((new String(pacote.getData(), 0, pacote.getLength())).equals("Hello")) {
-                        connected++;
-                    }
+                    out.close();
+                    socket.close();
                 }
-
-                String msg = "Start";
-                DatagramPacket message = new DatagramPacket(msg.getBytes(), msg.length(), group, 3000);
-                socket.send(message);
             } else {
-                // manda um Hello ao se conectar e espera por um Start para sair do loop
-                String msg = "Hello";
-                socket.joinGroup(group);
-                DatagramPacket message = new DatagramPacket(msg.getBytes(), msg.length(), group, 3000);
-                socket.send(message);
+                ServerSocket servsock = new ServerSocket(port);
+                Socket socket = servsock.accept();
+                Scanner scanner = new Scanner(socket.getInputStream());
 
-                String confirmation = "";
+                scanner.next();
 
-                while (!confirmation.equals("Start")) {
-                    byte[] entrada = new byte[1024];
-                    DatagramPacket pacote = new DatagramPacket(entrada, entrada.length);
-                    socket.receive(pacote);
-                    confirmation = new String(pacote.getData(), 0, pacote.getLength());
-                }
+                scanner.close();
+                socket.close();
+                servsock.close();
 
             }
-
-            socket.leaveGroup(group);
-            socket.close();
 
             System.out.println(id + " começou...");
 
