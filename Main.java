@@ -36,12 +36,11 @@ public class Main {
         clock = 0;
         String multiIp = "224.0.0.2";
 
+        // le arquivo de configuração
         while (sc.hasNextLine()) {
             String[] line = sc.nextLine().split(" ");
-            /*if (line[0].equals("1")) {
-                multiIp = line[1];
-            }*/
 
+            //Caso a linha do arquivo de configuração seja o proprio nodo, guarda as informações nas variáveis globais. Se não guarda na lista de nodos.
             if (line[0].equals(args[1])) {
                 id = Integer.parseInt(args[1]);
                 port = Integer.parseInt(line[2]);
@@ -51,16 +50,17 @@ public class Main {
                 nodes.add(node);
             }
         }
-        new Thread(Main::receiveEvent).start();
 
         try {
+            // se conecta no multicast
             InetAddress group = InetAddress.getByName(multiIp);
             MulticastSocket socket = new MulticastSocket(3000);
 
+            // o nodo com id 1 irá esperar até todos os outros nodos se conectarem
+            // e mandarem um Hello para mandar um Start e sair do loop
             if (id == 1) {
-                System.out.println(multiIp);
                 socket.joinGroup(group);
-                System.out.println('a');
+
                 int connected = 0;
                 while (connected != nodes.size()) {
                     byte[] entrada = new byte[1024];
@@ -70,29 +70,37 @@ public class Main {
                         connected++;
                     }
                 }
-                System.out.println(connected);
+
                 String msg = "Start";
                 DatagramPacket message = new DatagramPacket(msg.getBytes(), msg.length(), group, 3000);
                 socket.send(message);
             } else {
+                // manda um Hello ao se conectar e espera por um Start para sair do loop
                 String msg = "Hello";
                 socket.joinGroup(group);
                 DatagramPacket message = new DatagramPacket(msg.getBytes(), msg.length(), group, 3000);
                 socket.send(message);
 
-                String conf = "";
+                String confirmation = "";
 
-                while (!conf.equals("Start")) {
+                while (!confirmation.equals("Start")) {
                     byte[] entrada = new byte[1024];
                     DatagramPacket pacote = new DatagramPacket(entrada, entrada.length);
                     socket.receive(pacote);
-                    conf = new String(pacote.getData(), 0, pacote.getLength());
+                    confirmation = new String(pacote.getData(), 0, pacote.getLength());
                 }
 
             }
 
             socket.leaveGroup(group);
-            System.out.println(id + " saiu");
+            socket.close();
+
+            System.out.println(id + " começou...");
+
+            // inicia o método para receber mensagem de outros nodos em uma thread paralela
+            new Thread(Main::receiveEvent).start();
+
+            // começa a gerar os eventos
             start();
         } catch (IOException e) {
             e.printStackTrace();
@@ -101,20 +109,22 @@ public class Main {
 
     public static void start() {
         for (int i = 0; i < 5; i++) {
-            int wait = random.nextInt(500) + 500;
+            // espera entre 0,5 e 1 segundo para gerar um evento
+            int waitTime = random.nextInt(500) + 500;
             try {
-                Thread.sleep(wait);
+                Thread.sleep(waitTime);
             } catch (InterruptedException ignored) {
             }
 
+            // escolhe randomicamente se o evento será local ou não de acordo com a chance do nodo
             boolean localEvent = random.nextInt(100) > chance;
-
             if (localEvent) {
                 localEvent();
             } else {
+                // caso não tenha uma resposta do outro nodo encerra a execução
                 if (!sendEvent()) {
                     System.out.println("Falha no envio, encerrando...");
-                    return;
+                    break;
                 }
             }
         }
@@ -122,10 +132,12 @@ public class Main {
         System.exit(0);
     }
 
+    // gera um evento local
     public static void localEvent() {
         addClock(-1, "l");
     }
 
+    //escolhe um nodo aleatório e envia a id e o relogio atual para ele
     public static boolean sendEvent() {
         Node randomNode = nodes.get(random.nextInt(nodes.size()));
 
@@ -151,6 +163,7 @@ public class Main {
         return true;
     }
 
+    // espera conexões de outros nodos
     public static void receiveEvent() {
         while (true) {
             try {
@@ -172,11 +185,12 @@ public class Main {
         }
     }
 
+    // realiza as operações no relógio local e faz o print das informações
     public synchronized static void addClock(int received, String out) {
         if (received == -1) {
             clock++;
         } else {
-            clock = Math.max(clock + 1, received + 1);
+            clock = Math.max(clock, received) + 1;
         }
         System.out.println(System.nanoTime() + " " + id + " " + clock + id + " " + out);
     }
