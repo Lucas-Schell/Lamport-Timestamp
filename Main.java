@@ -9,9 +9,8 @@ import java.util.Scanner;
 
 public class Main {
 
-    private static int id;
+    private static Node self;
     private volatile static int clock;
-    private static int port;
     private static int chance;
     private static ArrayList<Node> nodes;
     private static Random random;
@@ -34,7 +33,6 @@ public class Main {
         random = new Random();
         nodes = new ArrayList<>();
         clock = 0;
-        String multiIp = "224.0.0.2";
 
         // le arquivo de configuração
         while (sc.hasNextLine()) {
@@ -42,11 +40,10 @@ public class Main {
 
             //Caso a linha do arquivo de configuração seja o proprio nodo, guarda as informações nas variáveis globais. Se não guarda na lista de nodos.
             if (line[0].equals(args[1])) {
-                id = Integer.parseInt(args[1]);
-                port = Integer.parseInt(line[2]);
+                self = new Node(Integer.parseInt(line[0]), line[1], Integer.parseInt(line[2]), Integer.parseInt(line[4]));
                 chance = (int) (Float.parseFloat(line[3]) * 100);
             } else {
-                Node node = new Node(Integer.parseInt(line[0]), line[1], Integer.parseInt(line[2]));
+                Node node = new Node(Integer.parseInt(line[0]), line[1], Integer.parseInt(line[2]), Integer.parseInt(line[4]));
                 nodes.add(node);
             }
         }
@@ -57,11 +54,11 @@ public class Main {
         try {
             // o nodo com id 1 irá esperar até todos os outros nodos se conectarem
             // e mandarem um Hello para mandar um Start e sair do loop
-            if (id == 1) {
+            if (self.getId() == 1) {
                 Socket socket;
                 PrintStream out;
                 for (Node node : nodes) {
-                    socket = new Socket(node.getIp(), 8000);
+                    socket = new Socket(node.getIp(), node.getStartPort());
                     out = new PrintStream(socket.getOutputStream());
                     out.println("s");
 
@@ -69,7 +66,7 @@ public class Main {
                     socket.close();
                 }
             } else {
-                ServerSocket servsock = new ServerSocket(8000);
+                ServerSocket servsock = new ServerSocket(self.getStartPort());
                 Socket socket = servsock.accept();
                 Scanner scanner = new Scanner(socket.getInputStream());
 
@@ -81,7 +78,7 @@ public class Main {
 
             }
 
-            System.out.println(id + " começou...");
+            System.out.println(self.getId() + " começou...");
 
             // começa a gerar os eventos
             start();
@@ -130,7 +127,7 @@ public class Main {
 
         try {
             Socket socket = new Socket(nodeIp, nodePort);
-            String message = id + " " + (clock + 1);
+            String message = self.getId() + " " + (clock + 1);
 
             PrintStream out = new PrintStream(socket.getOutputStream());
             out.println(message);
@@ -151,7 +148,7 @@ public class Main {
     public static void receiveEvent() {
         while (true) {
             try {
-                ServerSocket servsock = new ServerSocket(port);
+                ServerSocket servsock = new ServerSocket(self.getPort());
                 Socket socket = servsock.accept();
                 Scanner scanner = new Scanner(socket.getInputStream());
 
@@ -176,6 +173,6 @@ public class Main {
         } else {
             clock = Math.max(clock, received) + 1;
         }
-        System.out.println(System.nanoTime() + " " + id + " " + clock + id + " " + out);
+        System.out.println(System.nanoTime() + " " + self.getId() + " " + clock + self.getId() + " " + out);
     }
 }
