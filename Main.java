@@ -61,7 +61,7 @@ public class Main {
                 Socket socket;
                 PrintStream out;
                 for (Node node : nodes) {
-                    socket = new Socket(node.getIp(), node.getPort());
+                    socket = new Socket(node.getIp(), 8000);
                     out = new PrintStream(socket.getOutputStream());
                     out.println("s");
 
@@ -69,7 +69,7 @@ public class Main {
                     socket.close();
                 }
             } else {
-                ServerSocket servsock = new ServerSocket(port);
+                ServerSocket servsock = new ServerSocket(8000);
                 Socket socket = servsock.accept();
                 Scanner scanner = new Scanner(socket.getInputStream());
 
