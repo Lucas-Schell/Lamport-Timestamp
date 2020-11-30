@@ -51,8 +51,10 @@ public class Main {
             }
         }
 
-        try {
+        // inicia o método para receber mensagem de outros nodos em uma thread paralela
+        new Thread(Main::receiveEvent).start();
 
+        try {
             // o nodo com id 1 irá esperar até todos os outros nodos se conectarem
             // e mandarem um Hello para mandar um Start e sair do loop
             if (id == 1) {
@@ -80,9 +82,6 @@ public class Main {
             }
 
             System.out.println(id + " começou...");
-
-            // inicia o método para receber mensagem de outros nodos em uma thread paralela
-            new Thread(Main::receiveEvent).start();
 
             // começa a gerar os eventos
             start();
