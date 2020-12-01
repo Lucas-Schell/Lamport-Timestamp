@@ -88,7 +88,7 @@ public class Main {
     }
 
     public static void start() {
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 100; i++) {
             // espera entre 0,5 e 1 segundo para gerar um evento
             int waitTime = random.nextInt(500) + 500;
             try {
